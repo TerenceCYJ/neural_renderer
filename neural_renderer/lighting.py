@@ -33,11 +33,19 @@ def lighting(faces, textures, intensity_ambient=0.5, intensity_directional=0.5,
     light = torch.zeros(bs, nf, 3, dtype=torch.float32).to(device)
 
     # ambient light
+    '''#cyj 20200622
     if intensity_ambient != 0:
         light += intensity_ambient * color_ambient[:, None, :]
-
+    '''
+    #light += intensity_ambient[:,None,None] * color_ambient[:, None, :]#cyj 20200622
+    if torch.is_tensor(intensity_ambient):#20200703
+        light += intensity_ambient[:,None,None] * color_ambient[:, None, :]#cyj 20200622
+    else:
+        light += intensity_ambient * color_ambient[:, None, :]
+    #import pdb; pdb.set_trace()
     # directional light
-    if intensity_directional != 0:
+    #if intensity_directional != 0:#cyj
+    if intensity_directional is not None:
         faces = faces.reshape((bs * nf, 3, 3))
         v10 = faces[:, 0] - faces[:, 1]
         v12 = faces[:, 2] - faces[:, 1]
@@ -49,7 +57,11 @@ def lighting(faces, textures, intensity_ambient=0.5, intensity_directional=0.5,
             direction = direction[:, None, :]
         cos = F.relu(torch.sum(normals * direction, dim=2))
         # may have to verify that the next line is correct
-        light += intensity_directional * (color_directional[:, None, :] * cos[:, :, None])
+        #import pdb; pdb.set_trace()
+        if torch.is_tensor(intensity_directional):#20200703
+            light += intensity_directional[:,None,None] * (color_directional[:, None, :] * cos[:, :, None])
+        else:
+            light += intensity_directional * (color_directional[:, None, :] * cos[:, :, None])
 
     # apply
     light = light[:,:,None, None, None, :]
